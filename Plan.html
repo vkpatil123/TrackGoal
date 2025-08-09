@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sticky Notes</title>
+  <style>
+    .navbar {
+      background-color: #007bff;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+      font-size: 16px;
+      transition: opacity 0.2s;
+    }
+
+    .navbar a:hover {
+      opacity: 0.8;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #addNoteBtn, #deleteAllBtn {
+      position: fixed;
+      bottom: 30px;
+      width: 60px;
+      height: 60px;
+      font-size: 32px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 999;
+    }
+
+    #addNoteBtn:hover, #deleteAllBtn:hover {
+      background-color: #0056b3;
+    }
+
+    #addNoteBtn {
+      right: 30px;
+    }
+
+    #deleteAllBtn {
+      right: 100px;
+    }
+
+    .sticky-note {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: auto;
+      z-index: 100;
+      resize: both;
+    }
+
+    .sticky-note textarea {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+      resize: none;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .note-header button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .note-header button:hover {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <h1>📝 Sticky Notes</h1>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Sheet</a>
+      <a href="search.html">Search</a>
+      <a href="all.html">All Sheets</a>
+      <a href="sticky.html">Sticky Notes</a>
+    </div>
+  </div>
+
+  <button id="addNoteBtn">+</button>
+  <button id="deleteAllBtn" title="Delete All Notes">🗑️</button>
+
+  <script>
+    let noteIdCounter = parseInt(localStorage.getItem("noteIdCounter") || "0");
+    const colors = ["#fffb88", "#ffd1dc", "#c3f0ca", "#b2ebf2", "#e0c3fc", "#ffe0b2"];
+
+    function getRandomColor() {
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function getNextNotePosition() {
+      const notes = document.querySelectorAll(".sticky-note");
+      let top = 100, left = 100;
+
+      if (notes.length > 0) {
+        const last = notes[notes.length - 1];
+        const lastLeft = parseInt(last.style.left);
+        const lastTop = parseInt(last.style.top);
+
+        left = lastLeft + 220;
+        top = lastTop;
+
+        if (left + 220 > window.innerWidth) {
+          left = 100;
+          top = lastTop + 220;
+        }
+      }
+
+      return { top, left };
+    }
+
+    function createStickyNote(content = "", top = null, left = null, bgColor = getRandomColor()) {
+      const id = "sticky_" + noteIdCounter++;
+      localStorage.setItem("noteIdCounter", noteIdCounter);
+
+      const position = getNextNotePosition();
+      top = top !== null ? top : position.top;
+      left = left !== null ? left : position.left;
+
+      const noteData = { id, content, top, left, bgColor };
+      localStorage.setItem(id, JSON.stringify(noteData));
+
+      renderNote(noteData);
+    }
+
+    function renderNote({ id, content, top, left, bgColor }) {
+      const note = document.createElement("div");
+      note.className = "sticky-note";
+      note.style.top = `${top}px`;
+      note.style.left = `${left}px`;
+      note.style.backgroundColor = bgColor;
+      note.setAttribute("data-id", id);
+
+      note.innerHTML = `
+        <div class="note-header">
+          <span>📝</span>
+          <button title="Delete" class="delete-btn">🗑️</button>
+        </div>
+        <textarea>${content}</textarea>
+      `;
+
+      document.body.appendChild(note);
+
+      let isDragging = false, offsetX, offsetY;
+
+      note.addEventListener("mousedown", (e) => {
+        if (e.target.tagName === "TEXTAREA" || e.target.classList.contains("delete-btn")) return;
+        isDragging = true;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        note.style.zIndex = 999;
+      });
+
+      document.addEventListener("mousemove", (e) => {
+        if (isDragging) {
+          note.style.top = `${e.clientY - offsetY}px`;
+          note.style.left = `${e.clientX - offsetX}px`;
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (isDragging) {
+          isDragging = false;
+          const id = note.getAttribute("data-id");
+          const stored = JSON.parse(localStorage.getItem(id));
+          if (stored) {
+            stored.top = parseInt(note.style.top);
+            stored.left = parseInt(note.style.left);
+            localStorage.setItem(id, JSON.stringify(stored));
+          }
+        }
+      });
+
+      note.querySelector("textarea").addEventListener("input", (e) => {
+        const updated = e.target.value;
+        const stored = JSON.parse(localStorage.getItem(id));
+        if (stored) {
+          stored.content = updated;
+          localStorage.setItem(id, JSON.stringify(stored));
+        }
+      });
+
+      note.querySelector(".delete-btn").addEventListener("click", () => {
+        if (confirm("Delete this note?")) {
+          note.remove();
+          localStorage.removeItem(id);
+        }
+      });
+    }
+
+    function loadNotes() {
+      for (let key in localStorage) {
+        if (key.startsWith("sticky_")) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (data) renderNote(data);
+          } catch (e) {
+            console.error("Failed to load note", key);
+          }
+        }
+      }
+    }
+
+    document.getElementById("addNoteBtn").addEventListener("click", () => {
+      createStickyNote();
+    });
+
+    document.getElementById("deleteAllBtn").addEventListener("click", () => {
+      if (confirm("Delete ALL sticky notes?")) {
+        const keysToRemove = [];
+        for (let key in localStorage) {
+          if (key.startsWith("sticky_")) keysToRemove.push(key);
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        document.querySelectorAll(".sticky-note").forEach(el => el.remove());
+      }
+    });
+
+    loadNotes();
+  </script>
+</body>
+</html>

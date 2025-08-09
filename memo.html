@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>📚 Study Plan Memo</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .navbar {
+      background-color: #007bff;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+    }
+
+    .navbar a:hover {
+      opacity: 0.8;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    button.action-btn {
+      background-color: transparent;
+      color: #007bff;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    button.action-btn:hover {
+      color: #0056b3;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background-color: #28a745;
+      border-radius: 5px;
+      transition: width 0.3s ease-in-out;
+    }
+
+    @media (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .navbar a {
+        margin: 10px 0 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>🧠 Study Plan Memo</h1>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Sheet</a>
+      <a href="search.html">Search</a>
+      <a href="all.html">All Sheets</a>
+      <a href="sticky.html">Sticky Notes</a>
+      <a href="goal.html">Goal Tracker</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>📋 Saved Study Plans</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Progress</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="memoTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const tbody = document.getElementById("memoTable");
+    const keys = Object.keys(localStorage);
+
+    keys.filter(k => k.startsWith("studyPlan_")).forEach(key => {
+      const rawPlan = localStorage.getItem(key);
+      if (!rawPlan) return;
+
+      const plan = JSON.parse(rawPlan);
+      const statusKey = `status_${plan.date}`;
+      const rawStatus = localStorage.getItem(statusKey);
+      const status = rawStatus ? JSON.parse(rawStatus) : {};
+
+      const slotCount = plan.slots.length;
+      const completed = Object.values(status).filter(s => s === true).length;
+      const progress = Math.round((completed / slotCount) * 100);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${plan.date}</td>
+        <td>
+          ${progress}%
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${progress}%"></div>
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="action-btn" onclick="openPlan('${key}')" title="Open">📖</button>
+            <button class="action-btn" onclick="deletePlan('${key}')" title="Delete">🗑️</button>
+            <button class="action-btn" onclick="downloadCSV('${key}')" title="Download CSV">⬇️</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    function openPlan(key) {
+      const plan = localStorage.getItem(key);
+      if (!plan) {
+        alert("Unable to open the selected plan. It may have been deleted or corrupted.");
+        return;
+      }
+      localStorage.setItem("currentStudyPlan", plan);
+      window.location.href = "view_plan.html";
+    }
+
+    function deletePlan(key) {
+      if (confirm("Are you sure you want to delete this study plan?")) {
+        const plan = JSON.parse(localStorage.getItem(key));
+        localStorage.removeItem(`studyPlan_${plan.date}`);
+        localStorage.removeItem(`status_${plan.date}`);
+        location.reload();
+      }
+    }
+
+    function downloadCSV(key) {
+      const plan = JSON.parse(localStorage.getItem(key));
+      const rows = ["Date,Day,Time Slot,Task"];
+      plan.slots.forEach(slot => {
+        rows.push(`${plan.date},${plan.day},"${slot.time}","${slot.task}"`);
+      });
+
+      const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${plan.date.replaceAll("/", "-")}_study_plan.csv`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

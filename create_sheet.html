@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Task Sheet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Create Your Task Sheet</h1>
+
+    <div class="form-section">
+      <label for="sheetName">Sheet Name:</label>
+      <input type="text" id="sheetName" placeholder="e.g., Sliding Window" required>
+
+      <label for="columnCount">Number of Columns:</label>
+      <input type="number" id="columnCount" min="1" required>
+
+      <div id="columnNames" class="column-names"></div>
+
+      <label for="rowCount">Number of Rows:</label>
+      <input type="number" id="rowCount" min="1" value="1" required>
+
+      <button id="createSheetBtn">Create Sheet</button>
+    </div>
+  </div>
+
+  <script>
+    const columnCountInput = document.getElementById('columnCount');
+    const columnNamesDiv = document.getElementById('columnNames');
+    const createSheetBtn = document.getElementById('createSheetBtn');
+
+    columnCountInput.addEventListener('input', () => {
+      const count = parseInt(columnCountInput.value);
+      columnNamesDiv.innerHTML = '';
+
+      if (isNaN(count) || count < 1) return;
+
+      for (let i = 0; i < count; i++) {
+        const label = document.createElement('label');
+        label.textContent = `Column ${i + 1} Name:`;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = `Column ${i + 1}`;
+        input.classList.add('colName');
+        columnNamesDiv.appendChild(label);
+        columnNamesDiv.appendChild(input);
+      }
+    });
+
+    createSheetBtn.addEventListener('click', () => {
+      const sheetName = document.getElementById('sheetName').value.trim();
+      const rowCount = parseInt(document.getElementById('rowCount').value);
+      const colInputs = document.querySelectorAll('.colName');
+
+      if (!sheetName || isNaN(rowCount) || rowCount < 1 || colInputs.length === 0) {
+        alert('Please fill out all fields correctly.');
+        return;
+      }
+
+      const columnNames = Array.from(colInputs).map(input => input.value || 'Untitled');
+
+      const sheetData = {
+        sheetName,
+        columns: columnNames,
+        rowCount
+      };
+
+      // Save to localStorage
+      localStorage.setItem('sheetData', JSON.stringify(sheetData));
+
+      // Navigate to sheet page
+      window.location.href = 'sheet.html';
+    });
+  </script>
+</body>
+</html>

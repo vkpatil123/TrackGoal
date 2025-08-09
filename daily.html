@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Study Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .goal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .goal-form input, .goal-form select, .goal-form button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .goal-form button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .goal-form button:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      display: none;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <h1>🧠 AI Study Planner</h1>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Sheet</a>
+      <a href="search.html">Search</a>
+      <a href="all.html">All Sheets</a>
+      <a href="sticky.html">Sticky Notes</a>
+      <a href="goal.html">Goal Tracker</a>
+      <a href="memo.html">View Memo</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>📆 Vibing Study Plan for Today</h2>
+    <div class="goal-form">
+      <input type="text" id="planTitle" placeholder="Give your day a title (e.g. Revision Sunday ✨)">
+      <input type="number" id="taskCount" placeholder="Number of tasks today">
+      <div id="taskInputs"></div>
+      <button onclick="prepareInputFields()">Generate Task Inputs</button>
+      <button onclick="generateStudySchedule()">Generate AI Study Plan</button>
+      <button onclick="savePlanToStorage()">💾 Save Plan</button>
+    </div>
+
+    <table id="planTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Day</th>
+          <th>Time Slot</th>
+          <th>Task</th>
+        </tr>
+      </thead>
+      <tbody id="planBody"></tbody>
+    </table>
+  </div>
+
+  <div id="toast">✅ Study plan saved!</div>
+
+  <script>
+    let latestStudySlots = [];
+    let storedTitle = "";
+
+    function prepareInputFields() {
+      const taskCount = parseInt(document.getElementById("taskCount").value);
+      const taskInputsDiv = document.getElementById("taskInputs");
+      taskInputsDiv.innerHTML = "";
+
+      if (isNaN(taskCount) || taskCount <= 0) {
+        alert("Please enter a valid number of tasks.");
+        return;
+      }
+
+      for (let i = 0; i < taskCount; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = `Task ${i + 1} Name`;
+        input.classList.add("task-name-input");
+        taskInputsDiv.appendChild(input);
+      }
+    }
+
+    function generateStudySchedule() {
+      storedTitle = document.getElementById("planTitle").value.trim();
+      const taskInputs = document.querySelectorAll(".task-name-input");
+      const tasks = Array.from(taskInputs).map(input => input.value.trim()).filter(v => v);
+
+      if (!storedTitle || tasks.length === 0) {
+        alert("Please enter a title and at least one task name.");
+        return;
+      }
+
+      const startHour = 6;
+      const endHour = 23;
+      const studySlots = [];
+
+      for (let h = startHour; h < endHour; h++) {
+        if ([9, 13, 17, 21].includes(h)) {
+          studySlots.push({ time: `${h}:00 - ${h + 1}:00`, task: "Break Time 🧃" });
+        } else {
+          studySlots.push({ time: `${h}:00 - ${h + 1}:00`, task: null });
+        }
+      }
+
+      const availableSlots = studySlots.filter(s => !s.task);
+      for (let i = 0; i < Math.min(tasks.length, availableSlots.length); i++) {
+        availableSlots[i].task = tasks[i];
+      }
+
+      latestStudySlots = studySlots;
+
+      const today = new Date();
+      const dateStr = today.toLocaleDateString();
+      const dayStr = today.toLocaleDateString(undefined, { weekday: 'long' });
+
+      const tbody = document.getElementById("planBody");
+      tbody.innerHTML = "";
+
+      studySlots.forEach(slot => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${dateStr}</td>
+          <td>${dayStr}</td>
+          <td>${slot.time}</td>
+          <td>${slot.task || "-- Free Time / Flex --"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("planTable").style.display = "table";
+    }
+
+    function savePlanToStorage() {
+      if (!latestStudySlots.length || !storedTitle) {
+        alert("Please generate a study plan first.");
+        return;
+      }
+
+      const today = new Date();
+      const dateStr = today.toLocaleDateString();
+      const dayStr = today.toLocaleDateString(undefined, { weekday: 'long' });
+
+      const storageKey = `studyPlan_${dateStr}`;
+      const plan = {
+        title: storedTitle,
+        date: dateStr,
+        day: dayStr,
+        slots: latestStudySlots
+      };
+
+      localStorage.setItem(storageKey, JSON.stringify(plan));
+      showToast();
+    }
+
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
