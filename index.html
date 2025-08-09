@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Sheet App</title>
+<style>
+    /* ==== NAVBAR ==== */
+.navbar {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 1px;
+}
+
+.navbar a {
+  color: white;
+  text-decoration: none;
+  margin-left: 20px;
+  font-weight: bold;
+  font-size: 16px;
+  transition: opacity 0.2s;
+}
+
+.navbar a:hover {
+  opacity: 0.8;
+}
+
+/* ==== GLOBAL STYLES ==== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f2f5;
+}
+
+/* ==== CONTAINER ==== */
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 40px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* ==== HEADING ==== */
+.container h2 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.container p {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+/* ==== BUTTONS ==== */
+.container a button {
+  width: 60%;
+  margin: 10px auto;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.container a button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+/* ==== RESPONSIVE ==== */
+@media (max-width: 600px) {
+  .container {
+    padding: 20px;
+  }
+
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navbar a {
+    margin: 10px 0 0;
+  }
+
+  .container a button {
+    width: 100%;
+  }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1>🗂️ Task Sheet Manager</h1>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="./daily.html">Daily-plan</a>
+      <a href="./Plan.html">Plan</a>
+      <a href="all.html">See All Sheets</a>
+    </div>
+  </div>
+
+  <!-- Hero Content -->
+  <div class="container">
+    <h2>Welcome, Productivity Hero! 🦸‍♂️</h2>
+    <p>Create and manage sheets to track your coding, learning, or work tasks — all in one place.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <a href="./create_sheet.html"><button>➕ Create New Sheet</button></a>
+      <a href="./Plan.html]"><button>🔍 Search for a Sheet</button></a>
+      <a href="./all.html"><button>📁 View All Sheets</button></a>
+    </div>
+  </div>
+
+</body>
+</html>

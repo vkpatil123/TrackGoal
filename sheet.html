@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Task Sheet</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1 id="sheetTitle">Loading Sheet...</h1>
+    <button id="saveBtn">💾 Save Sheet</button>
+    <div id="tableContainer"></div>
+    <p id="saveStatus" style="color: green;"></p>
+  </div>
+
+  <script>
+    const rawData = localStorage.getItem('sheetData');
+
+    if (!rawData) {
+      document.getElementById('sheetTitle').textContent = "⚠️ No Sheet Data Found!";
+      throw new Error("No sheet data found in localStorage.");
+    }
+
+    let sheetData;
+    try {
+      sheetData = JSON.parse(rawData);
+    } catch (err) {
+      document.getElementById('sheetTitle').textContent = "⚠️ Invalid Data Format!";
+      throw new Error("Error parsing JSON data.");
+    }
+
+    const { sheetName, columns } = sheetData;
+    let { rows, checkboxes } = sheetData;
+
+    const rowCount = rows ? rows.length : sheetData.rowCount;
+    if (!rows || !checkboxes) {
+      rows = Array.from({ length: rowCount }, () => Array(columns.length).fill('-'));
+      checkboxes = Array.from({ length: rowCount }, () => false);
+    }
+
+    document.getElementById('sheetTitle').textContent = sheetName;
+    const tableContainer = document.getElementById('tableContainer');
+
+    function renderTable() {
+      let tableHTML = `<table><thead><tr>`;
+      columns.forEach(col => {
+        tableHTML += `<th>${col}</th>`;
+      });
+      tableHTML += `<th>Status</th></tr></thead><tbody>`;
+
+      for (let i = 0; i < rowCount; i++) {
+        tableHTML += `<tr>`;
+        for (let j = 0; j < columns.length; j++) {
+          tableHTML += `<td contenteditable="true" data-row="${i}" data-col="${j}">${rows[i][j]}</td>`;
+        }
+        tableHTML += `<td><input type="checkbox" class="task-check" data-index="${i}" ${checkboxes[i] ? "checked" : ""}></td></tr>`;
+      }
+
+      tableHTML += `</tbody></table>`;
+      tableContainer.innerHTML = tableHTML;
+
+      document.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener('input', () => {
+          const row = cell.getAttribute('data-row');
+          const col = cell.getAttribute('data-col');
+          rows[row][col] = cell.textContent;
+        });
+      });
+
+      document.querySelectorAll('.task-check').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+          const index = checkbox.getAttribute('data-index');
+          checkboxes[index] = checkbox.checked;
+        });
+      });
+    }
+
+    renderTable();
+
+    const saveBtn = document.getElementById('saveBtn');
+    const saveStatus = document.getElementById('saveStatus');
+
+    saveBtn.addEventListener('click', () => {
+      const updatedSheet = {
+        sheetName,
+        columns,
+        rows,
+        checkboxes
+      };
+
+      localStorage.setItem(`sheet_${sheetName}`, JSON.stringify(updatedSheet)); // ✅ Permanent save
+      localStorage.setItem('sheetData', JSON.stringify(updatedSheet));          // 🔁 Session reuse
+
+      // ✅ Also update sheetList if not present
+      let sheetList = JSON.parse(localStorage.getItem("sheetList")) || [];
+      if (!sheetList.includes(sheetName)) {
+        sheetList.push(sheetName);
+        localStorage.setItem("sheetList", JSON.stringify(sheetList));
+      }
+
+      saveStatus.textContent = "✅ Sheet saved successfully!";
+      setTimeout(() => saveStatus.textContent = "", 3000);
+    });
+  </script>
+</body>
+</html>

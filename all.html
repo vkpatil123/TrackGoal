@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>All Task Sheets</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #f0f2f5;
+      --text-color: #333;
+      --container-bg: white;
+      --navbar-bg: #007bff;
+      --navbar-text: white;
+      --table-border: #ccc;
+      --hover-open: #007bff;
+      --hover-delete: red;
+      --th-bg: #f9f9f9;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --container-bg: #1e1e1e;
+      --navbar-bg: #1f1f1f;
+      --navbar-text: #ffffff;
+      --table-border: #555;
+      --hover-open: #66b2ff;
+      --hover-delete: #ff6b6b;
+      --th-bg: #2b2b2b;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .navbar {
+      background-color: var(--navbar-bg);
+      color: var(--navbar-text);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: var(--navbar-text);
+    }
+
+    .navbar a {
+      color: var(--navbar-text);
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+      font-size: 16px;
+      transition: opacity 0.2s;
+    }
+
+    .navbar a:hover {
+      opacity: 0.8;
+    }
+
+    .toggle-dark {
+      background: none;
+      border: 2px solid var(--navbar-text);
+      color: var(--navbar-text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background-color: var(--container-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      color: var(--text-color);
+    }
+
+    th, td {
+      border: 1px solid var(--table-border);
+      padding: 12px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background-color: var(--th-bg);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button.sheet-link, button.delete-btn, button.export-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-color);
+    }
+
+    button.sheet-link:hover {
+      color: var(--hover-open);
+      transform: scale(1.2);
+    }
+
+    button.delete-btn:hover {
+      color: var(--hover-delete);
+      transform: rotate(15deg);
+    }
+
+    button.export-btn:hover {
+      color: green;
+      transform: scale(1.2);
+    }
+
+    .progress-bar {
+      height: 12px;
+      width: 100%;
+      background-color: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: #28a745;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1>🗂️ Task Sheet Manager</h1>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="create.html">Create Sheet</a>
+      <a href="search.html">Search Sheet</a>
+      <a href="all.html">See All Sheets</a>
+      <button class="toggle-dark" id="toggleDark">🌙</button>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="container">
+    <h2>📁 Your Saved Sheets</h2>
+    <div id="sheetListContainer"></div>
+    <button id="repairBtn" style="margin-top: 20px;">🛠️ Repair Sheet List</button>
+  </div>
+
+  <script>
+    const container = document.getElementById("sheetListContainer");
+    const repairBtn = document.getElementById("repairBtn");
+
+    function buildTable(sheetList) {
+      let tableHTML = '<table><thead><tr><th>Sheet Name</th><th>Progress</th><th>Actions</th></tr></thead><tbody>';
+
+      sheetList.forEach(sheetName => {
+        const data = localStorage.getItem(`sheet_${sheetName}`);
+        let progressHTML = '<em>Not available</em>';
+
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            const checks = parsed.checkboxes || [];
+            const total = checks.length;
+            const done = checks.filter(x => x).length;
+            const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+            progressHTML = `
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${percent}%"></div>
+              </div>
+              <small>${percent}% done</small>
+            `;
+          } catch (e) {
+            progressHTML = '<em>Error reading progress</em>';
+          }
+        }
+
+        tableHTML += `
+          <tr>
+            <td>${sheetName}</td>
+            <td>${progressHTML}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="sheet-link" data-sheet="${sheetName}" title="Open Sheet">📄</button>
+                <button class="export-btn" data-sheet="${sheetName}" title="Export as JSON">📤</button>
+                <button class="delete-btn" data-sheet="${sheetName}" title="Delete Sheet">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableHTML += '</tbody></table>';
+      container.innerHTML = tableHTML;
+
+      document.querySelectorAll(".sheet-link").forEach(button => {
+        button.addEventListener("click", () => {
+          const sheetName = button.getAttribute("data-sheet");
+          const data = localStorage.getItem(`sheet_${sheetName}`);
+          if (data) {
+            localStorage.setItem("sheetData", data);
+            window.location.href = "sheet.html";
+          } else {
+            alert("Sheet data missing for: " + sheetName);
+          }
+        });
+      });
+
+      document.querySelectorAll(".delete-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const sheetName = button.getAttribute("data-sheet");
+          if (confirm(`Are you sure you want to delete sheet: ${sheetName}?`)) {
+            localStorage.removeItem(`sheet_${sheetName}`);
+            let sheetList = JSON.parse(localStorage.getItem("sheetList")) || [];
+            sheetList = sheetList.filter(name => name !== sheetName);
+            localStorage.setItem("sheetList", JSON.stringify(sheetList));
+            alert("🗑️ Sheet deleted successfully!");
+            loadSheets();
+          }
+        });
+      });
+
+      document.querySelectorAll(".export-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const sheetName = button.getAttribute("data-sheet");
+          const data = localStorage.getItem(`sheet_${sheetName}`);
+          if (!data) return alert("No data found to export for: " + sheetName);
+
+          const blob = new Blob([data], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `${sheetName.replace(/\s+/g, '_')}.json`;
+          link.click();
+        });
+      });
+    }
+
+    function loadSheets(autoRepair = false) {
+      container.innerHTML = '';
+      let sheetList = JSON.parse(localStorage.getItem("sheetList"));
+
+      if (!sheetList || sheetList.length === 0) {
+        if (autoRepair) {
+          repairSheetList();
+          return;
+        }
+        container.innerHTML = `<p>No sheets found. 😕 <a href="create.html">Create one now!</a></p>`;
+        return;
+      }
+
+      buildTable(sheetList);
+    }
+
+    function repairSheetList() {
+      const keys = Object.keys(localStorage);
+      const fixedList = [];
+
+      keys.forEach(key => {
+        if (key.startsWith("sheet_") && key !== "sheetData") {
+          const name = key.replace("sheet_", "");
+          fixedList.push(name);
+        }
+      });
+
+      localStorage.setItem("sheetList", JSON.stringify(fixedList));
+      alert("✅ Sheet list repaired! Refreshing...");
+      loadSheets();
+    }
+
+    const toggleBtn = document.getElementById("toggleDark");
+    const isDark = localStorage.getItem("darkMode") === "true";
+    if (isDark) document.body.classList.add("dark");
+
+    toggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDarkNow = document.body.classList.contains("dark");
+      localStorage.setItem("darkMode", isDarkNow);
+    });
+
+    repairBtn.addEventListener("click", repairSheetList);
+    loadSheets(true);
+  </script>
+
+</body>
+</html>
